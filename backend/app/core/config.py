@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     )
     app_environment: str = "development"
     frontend_origin: str = "http://localhost:5173"
+    session_cookie_name: str = "seischat_session"
+    csrf_cookie_name: str = "seischat_csrf"
+    session_ttl_minutes: int = 60
+    csrf_secure: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

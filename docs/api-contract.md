@@ -13,9 +13,19 @@ All endpoints use JSON unless stated otherwise. The backend is authoritative for
 
 Authentication uses a valid, unexpired, non-revoked server-side session carried by a Secure, HttpOnly cookie. State-changing requests also include the agreed CSRF protection.
 
-### CSRF integration status
+### CSRF
 
-The frontend cannot yet implement the required CSRF protection because this contract does not define how to obtain a token, the CSRF cookie name and attributes, the request header name, the token format/validation rules, or any endpoint exemptions. The backend and frontend owners must agree on and document these details before state-changing authentication requests can be verified as integrated. The frontend must not guess the mechanism or bypass server checks.
+Call `GET /api/auth/csrf` before state-changing requests. The response is
+`{"csrf_token":"..."}` and sets a `seischat_csrf` cookie. The client must send
+the same token in `X-CSRF-Token`. The CSRF cookie is not HttpOnly so browser
+JavaScript can read it, uses `SameSite=Lax`, `Path=/`, and follows the
+`CSRF_SECURE` setting. Tokens are cryptographically random and are replaced on
+login. Missing or mismatched tokens return `403 csrf_failed`.
+
+The authenticated session is stored in the `seischat_session` cookie. It is
+HttpOnly, `SameSite=Lax`, `Path=/`, and Secure in production or when
+`CSRF_SECURE=true`. Sessions expire after `SESSION_TTL_MINUTES` and are
+revoked on logout.
 
 ## `POST /api/auth/register`
 

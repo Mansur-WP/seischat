@@ -46,7 +46,8 @@ The server is authoritative for IDs, usernames, timestamps, persistence, authori
 
 The client must send non-empty text. The server trims or rejects whitespace according to the agreed validation policy, persists the message, assigns its ID and timestamp, and broadcasts `new_message`. The client must not invent a successful message ID or timestamp.
 
-Invalid input produces an `error` event to the requesting client. The message length limit is **TODO: Team Decision Required**.
+Invalid input produces an `error` event to the requesting client. Message
+content is trimmed and must contain 1–2000 characters.
 
 ## Server-to-Client: `new_message`
 

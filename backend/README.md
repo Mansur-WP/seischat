@@ -1,8 +1,8 @@
 # SeisChat backend
 
-The backend is a FastAPI modular monolith. It is the HTTP entry point for
-future authentication, messaging, and WebSocket features, and uses SQLAlchemy
-and Alembic to work with PostgreSQL.
+The backend is a FastAPI modular monolith providing authentication, persistent
+messaging, online presence, and WebSocket chat. It uses SQLAlchemy and Alembic
+with PostgreSQL in deployed environments.
 
 ## Folder structure
 
@@ -10,14 +10,11 @@ and Alembic to work with PostgreSQL.
 - `app/core/config.py` loads environment-backed settings.
 - `app/database/connection.py` creates the SQLAlchemy engine and request
   session dependency.
-- `app/database/base.py` holds the declarative base for future models.
-- `app/api/routes/` contains thin HTTP route modules. Phase 1 includes only
-  `GET /health`.
-- `migrations/` contains Alembic configuration and future migration revisions.
-- `tests/` contains tests that can run without a live PostgreSQL server.
-
-Authentication, user/message models, migrations, REST resources, and
-WebSocket chat are intentionally deferred to later phases.
+- `app/models.py` defines users, server sessions, and messages.
+- `app/api/routes/` contains health, auth, message, and presence routes.
+- `app/websocket.py` authenticates `/ws/chat` and manages live presence.
+- `migrations/versions/` contains the initial schema revision.
+- `tests/` contains API and WebSocket tests using an in-memory SQLite database.
 
 ## Local setup
 
@@ -34,6 +31,8 @@ Copy-Item .env.example .env
 `.env` is local-only and is ignored by Git. Set `DATABASE_URL` to a
 PostgreSQL database you own locally. `FRONTEND_ORIGIN` must exactly match the
 browser origin, which is `http://localhost:5173` for the current Vite setup.
+Local development uses `CSRF_SECURE=false`; production must use HTTPS and set
+`CSRF_SECURE=true`.
 
 ## Run the API
 
@@ -50,23 +49,21 @@ Open `http://127.0.0.1:8000/health`. A successful response is:
 The health endpoint reports only application availability; it does not expose
 database credentials or infrastructure details.
 
+## Run migrations
+
+```powershell
+alembic upgrade head
+```
+
 ## Run tests
 
 ```powershell
 pytest
 ```
 
-The Phase 1 tests cover application import, the health response, and settings
-loaded from environment variables. They do not require PostgreSQL because no
-database query is made by the health route.
+The tests use an in-memory SQLite database and do not require PostgreSQL.
 
-## Alembic migrations
-
-Alembic is configured now so future SQLAlchemy models can be migrated. There
-are no Phase 1 models or migration revisions, so do not run or claim a schema
-migration yet.
-
-After a later phase adds models, create and review a revision from `backend`:
+To create a later revision from `backend`:
 
 ```powershell
 alembic revision --autogenerate -m "Describe the schema change"
@@ -80,4 +77,13 @@ alembic downgrade -1
 ```
 
 `migrations/env.py` loads the same `DATABASE_URL` setting as the application
-and imports `Base.metadata`, which is how Alembic discovers model tables.
+and imports all models before reading `Base.metadata`.
+
+## Authentication and CSRF
+
+Call `GET /api/auth/csrf` before state-changing requests. It returns
+`{"csrf_token": "..."}` and sets the `seischat_csrf` cookie. Send the same
+value in `X-CSRF-Token`. The session cookie is `seischat_session`; it is
+HttpOnly, SameSite=Lax, Path=/, and Secure when `CSRF_SECURE=true` or the
+application environment is `production`. CSRF failures return HTTP 403 with
+`{"error":{"code":"csrf_failed","message":"csrf_failed"}}`.

@@ -29,6 +29,36 @@ export function createApiClient({
   baseUrl = import.meta.env?.VITE_API_BASE_URL,
   fetchImpl = (...args) => globalThis.fetch(...args),
 } = {}) {
+  async function getCsrfToken(apiBaseUrl) {
+    let response
+    try {
+      response = await fetchImpl(`${apiBaseUrl}/api/auth/csrf`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
+      })
+    } catch (cause) {
+      throw new ApiError('Unable to reach the server. Check your connection and try again.', {
+        code: 'network_error',
+        cause,
+      })
+    }
+    if (!response.ok) {
+      throw new ApiError('Unable to initialize CSRF protection.', {
+        status: response.status,
+        code: 'csrf_initialization_error',
+      })
+    }
+    const payload = await response.json()
+    if (typeof payload?.csrf_token !== 'string' || !payload.csrf_token) {
+      throw new ApiError('The server returned an invalid CSRF token.', {
+        status: response.status,
+        code: 'invalid_csrf_response',
+      })
+    }
+    return payload.csrf_token
+  }
+
   async function request(path, { method = 'GET', body, headers, ...options } = {}) {
     const apiBaseUrl =
       typeof baseUrl === 'string' ? baseUrl.trim().replace(/\/+$/, '') : ''
@@ -41,6 +71,9 @@ export function createApiClient({
 
     const requestHeaders = new Headers(headers)
     requestHeaders.set('Accept', 'application/json')
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
+      requestHeaders.set('X-CSRF-Token', await getCsrfToken(apiBaseUrl))
+    }
     if (body !== undefined) {
       requestHeaders.set('Content-Type', 'application/json')
     }

@@ -9,6 +9,9 @@ test('sends JSON requests with cookie credentials and parses JSON responses', as
     baseUrl: 'https://api.example.test/',
     fetchImpl: async (url, options) => {
       capturedRequest = { url, options }
+      if (url.endsWith('/api/auth/csrf')) {
+        return Response.json({ csrf_token: 'csrf-token' })
+      }
       return Response.json({ user: { id: 'user-id' } }, { status: 201 })
     },
   })
@@ -27,6 +30,10 @@ test('sends JSON requests with cookie credentials and parses JSON responses', as
     'application/json',
   )
   assert.equal(
+    capturedRequest.options.headers.get('X-CSRF-Token'),
+    'csrf-token',
+  )
+  assert.equal(
     capturedRequest.options.body,
     JSON.stringify({ username: 'ada', password: 'secret' }),
   )
@@ -35,7 +42,10 @@ test('sends JSON requests with cookie credentials and parses JSON responses', as
 test('returns undefined for 204 responses without parsing JSON', async () => {
   const client = createApiClient({
     baseUrl: 'https://api.example.test',
-    fetchImpl: async () => new Response(null, { status: 204 }),
+    fetchImpl: async (url) =>
+      url.endsWith('/api/auth/csrf')
+        ? Response.json({ csrf_token: 'csrf-token' })
+        : new Response(null, { status: 204 }),
   })
 
   assert.equal(
@@ -47,16 +57,18 @@ test('returns undefined for 204 responses without parsing JSON', async () => {
 test('preserves the status and documented backend error code', async () => {
   const client = createApiClient({
     baseUrl: 'https://api.example.test',
-    fetchImpl: async () =>
-      Response.json(
-        {
-          error: {
-            code: 'username_taken',
-            message: 'That username is already in use.',
-          },
-        },
-        { status: 409 },
-      ),
+    fetchImpl: async (url) =>
+      url.endsWith('/api/auth/csrf')
+        ? Response.json({ csrf_token: 'csrf-token' })
+        : Response.json(
+            {
+              error: {
+                code: 'username_taken',
+                message: 'That username is already in use.',
+              },
+            },
+            { status: 409 },
+          ),
   })
 
   await assert.rejects(
