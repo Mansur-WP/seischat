@@ -15,6 +15,29 @@ export function getAuthFeedback(error, { operation }) {
     }
   }
 
+  if (error?.code === 'username_taken') {
+    return {
+      message: 'That username is already in use. Please choose another.',
+      type: 'error',
+    }
+  }
+
+  if (error?.code === 'csrf_failed' || error?.status === 403) {
+    return {
+      message:
+        'The security check could not be completed. Refresh the page and try again.',
+      type: 'error',
+    }
+  }
+
+  if (error?.code === 'validation_error') {
+    return {
+      message:
+        'Check the username and password. Usernames must be 3–32 characters, and passwords must be 8–256 characters.',
+      type: 'error',
+    }
+  }
+
   if (error?.status === 404) {
     return {
       message:

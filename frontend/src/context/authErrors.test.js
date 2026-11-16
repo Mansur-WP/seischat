@@ -37,3 +37,23 @@ test('uses the server validation message for documented client errors', () => {
     { message: 'That username is already in use.', type: 'error' },
   )
 })
+
+test('translates backend username, CSRF, and validation error codes', () => {
+  assert.match(
+    getAuthFeedback({ status: 409, code: 'username_taken' }, { operation: 'register' })
+      .message,
+    /username is already in use/,
+  )
+  assert.match(
+    getAuthFeedback({ status: 403, code: 'csrf_failed' }, { operation: 'login' })
+      .message,
+    /security check/,
+  )
+  assert.match(
+    getAuthFeedback(
+      { status: 422, code: 'validation_error' },
+      { operation: 'register' },
+    ).message,
+    /3–32 characters/,
+  )
+})

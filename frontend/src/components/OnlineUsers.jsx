@@ -5,6 +5,7 @@ function OnlineUsers({
   onSelectPeer,
   currentUserName,
   onUpdateName,
+  onLogout,
 }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [draftName, setDraftName] = useState(currentUserName);
@@ -139,10 +140,7 @@ function OnlineUsers({
         </div>
         <button
           type="button"
-          onClick={() => {
-            localStorage.clear();
-            window.location.reload();
-          }}
+          onClick={onLogout}
           className="mt-3 w-full text-left text-xs text-red-500/80 transition-colors hover:text-red-400"
         >
           Log Out
