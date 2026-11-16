@@ -54,6 +54,46 @@ test('returns undefined for 204 responses without parsing JSON', async () => {
   )
 })
 
+test('fetches a fresh CSRF token before every state-changing request', async () => {
+  const requests = []
+  let tokenNumber = 0
+  const client = createApiClient({
+    baseUrl: 'https://api.example.test',
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options })
+      if (url.endsWith('/api/auth/csrf')) {
+        tokenNumber += 1
+        return Response.json({ csrf_token: `csrf-${tokenNumber}` })
+      }
+      return Response.json({ user: { id: 'user-id' } }, { status: 201 })
+    },
+  })
+
+  await client.request('/api/auth/register', {
+    method: 'POST',
+    body: { username: 'ada', password: 'secret' },
+  })
+  await client.request('/api/auth/logout', { method: 'POST' })
+
+  const csrfRequests = requests.filter(({ url }) =>
+    url.endsWith('/api/auth/csrf'),
+  )
+  const stateChangingRequests = requests.filter(({ url }) =>
+    !url.endsWith('/api/auth/csrf'),
+  )
+  assert.equal(csrfRequests.length, 2)
+  assert.ok(csrfRequests.every(({ options }) => options.credentials === 'include'))
+  assert.deepEqual(
+    stateChangingRequests.map(({ options }) =>
+      options.headers.get('X-CSRF-Token'),
+    ),
+    ['csrf-1', 'csrf-2'],
+  )
+  assert.ok(
+    stateChangingRequests.every(({ options }) => options.credentials === 'include'),
+  )
+})
+
 test('preserves the status and documented backend error code', async () => {
   const client = createApiClient({
     baseUrl: 'https://api.example.test',

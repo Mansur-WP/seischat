@@ -5,7 +5,7 @@ import OnlineUsers from "./OnlineUsers";
 import ProfileModal from "./ProfileModal";
 import useChat from "../hooks/useChat";
 
-function Chatroom() {
+function Chatroom({ onLogout }) {
   const [currentUser, setCurrentUser] = useState({
     name: "Aliyu",
     handle: "aliyu",
@@ -44,6 +44,7 @@ function Chatroom() {
           <OnlineUsers
             onlineUsers={onlineUsers}
             currentUserName={currentUser.name}
+            onLogout={onLogout}
             onUpdateName={(name) =>
               setCurrentUser({
                 name,
