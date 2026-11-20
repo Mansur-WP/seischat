@@ -103,7 +103,7 @@ function Chatroom() {
             <button
               type="button"
               onClick={() => logout()}
-              className="ml-2 rounded border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="ml-2 md:hidden rounded border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800 hover:text-white transition-colors"
             >
               Sign out
             </button>
