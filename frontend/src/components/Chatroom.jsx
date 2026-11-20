@@ -125,6 +125,7 @@ function Chatroom() {
           onDelete={deleteMessage}
           currentUserName={currentUserName}
           currentUserHandle={currentUserHandle}
+          currentUserId={user?.id}
           onUserClick={(author) =>
             setSelectedPeer(
               typeof author === "string" ? { name: author } : author,

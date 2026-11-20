@@ -1,5 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 
+function getReplyUsername(replyState) {
+  const replyTo = replyState?.replyTo;
+  const username = [
+    replyState?.username,
+    replyState?.sender?.username,
+    replyState?.sender,
+    replyState?.author?.username,
+    replyState?.author,
+    replyState?.user?.username,
+    replyState?.user,
+    replyTo?.username,
+    replyTo?.sender?.username,
+    replyTo?.author?.username,
+    replyTo?.user?.username,
+  ].find(
+    (value) =>
+      typeof value === "string" &&
+      value.trim() &&
+      !["undefined", "null"].includes(value.trim().toLowerCase()),
+  );
+
+  return username?.trim().replace(/^@+/, "") || "someone";
+}
+
 function MessageComposer({ sendMessage, replyState, clearReply }) {
   const [text, setText] = useState("");
   const inputRef = useRef(null);
@@ -65,8 +89,10 @@ function MessageComposer({ sendMessage, replyState, clearReply }) {
   const sendCurrentMessage = () => {
     if (!text.trim()) return;
 
+    const replyContent =
+      typeof replyState?.content === "string" ? replyState.content : "";
     const content = replyState
-      ? `> @${replyState.username}: \`${replyState.content}\`\n\n${text}`
+      ? `> @${getReplyUsername(replyState)}: \`${replyContent}\`\n\n${text}`
       : text;
     sendMessage(content);
     setText("");
@@ -88,12 +114,12 @@ function MessageComposer({ sendMessage, replyState, clearReply }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="min-w-0 shrink-0 border-t border-zinc-800 bg-zinc-950 px-4 py-4 sm:px-8"
+      className="min-w-0 w-full max-w-full shrink-0 overflow-x-hidden border-t border-zinc-800 bg-zinc-950 px-4 py-4 sm:px-8"
     >
       {replyState && (
         <div className="mb-3 flex items-center justify-between gap-3 border-l border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-500">
           <p className="min-w-0 truncate">
-            Replying to @{replyState.username}
+            Replying to @{getReplyUsername(replyState)}
           </p>
           <button
             type="button"
@@ -108,7 +134,7 @@ function MessageComposer({ sendMessage, replyState, clearReply }) {
       <label htmlFor="chat-message" className="sr-only">
         Type a message
       </label>
-      <div className="flex items-end gap-2">
+      <div className="flex w-full min-w-0 max-w-full items-end gap-2">
         <textarea
           ref={inputRef}
           id="chat-message"
@@ -118,12 +144,12 @@ function MessageComposer({ sendMessage, replyState, clearReply }) {
           onKeyDown={handleInputKeyDown}
           placeholder="Type a message..."
           autoComplete="off"
-          className="max-h-[120px] min-h-12 min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:border-zinc-700 focus:outline-none"
+          className="max-h-[120px] min-h-12 min-w-0 w-full max-w-full flex-1 resize-none overflow-hidden break-words whitespace-pre-wrap rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:border-zinc-700 focus:outline-none"
         />
         {text.trim().length > 0 && (
           <button
             type="submit"
-            className="shrink-0 rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="shrink-0 rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-blue-400 focus:border-zinc-700 focus:outline-none focus:ring-0"
             aria-label="Send message"
           >
             <svg
